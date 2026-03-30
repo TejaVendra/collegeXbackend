@@ -8,7 +8,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         // Fixed the typo here: added //
-        origin: ["http://localhost:5173"], 
+        origin: ["https://cx-wh9z.onrender.com/"], 
         credentials: true
     },
     maxHttpBufferSize: 1e7,
