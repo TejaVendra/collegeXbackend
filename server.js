@@ -1,6 +1,6 @@
 import express, { json } from 'express'
 import connectDB from './database/connectDB.js'
-import userRouter from '../server/routes/userRouter.js'
+import userRouter from './routes/userRouter.js'
 import cookieParser from "cookie-parser";
 import dotenv from 'dotenv'
 import emailRouter from './routes/emailRouter.js'
