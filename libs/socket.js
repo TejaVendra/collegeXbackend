@@ -9,7 +9,8 @@ const io = new Server(server, {
     cors: {
         // Fixed the typo here: added //
         origin: ["https://cx-wh9z.onrender.com"], 
-        credentials: true
+        credentials: true,
+         transports: ["websocket", "polling"]
     },
     maxHttpBufferSize: 1e7,
 });
