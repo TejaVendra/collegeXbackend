@@ -1,7 +1,8 @@
 import cloudinary from "../libs/cloudinary.js";
 import { getReceiverSocketId, io } from "../libs/socket.js";
 import Message from "../modals/Message.js"; // Fixed typo: "modals" to "models"
-import User from "../modals/User.js"; // Fixed typo: "modals" to "models"
+import User from "../modals/User.js";
+import Notification from "../modals/Notification.js"; // Fixed typo: "modals" to "models"
 
 
 export const getMessage = async (req,res) =>{
@@ -82,6 +83,17 @@ export const sendMessage = async (req, res) => {
             image: img,
         });
 
+        const newNotification = new Notification({
+            author:senderId,
+            recipient:receiverId,
+            type:"message",
+            message: `new Message`,
+        });
+        await newNotification.save();
+        await newNotification.populate('author','fullName username profile');
+
+
+
         await newMessage.save();
         await newMessage.populate('senderId', 'fullName username profile');
 
@@ -89,7 +101,9 @@ export const sendMessage = async (req, res) => {
         const receiverSocketId = getReceiverSocketId(receiverId);
         if (receiverSocketId) {
             io.to(receiverSocketId).emit("newMessage", newMessage);
+            io.to(receiverSocketId).emit("newNotification",newNotification);
         }
+    
 
         res.status(200).json({ 
             success: true, 

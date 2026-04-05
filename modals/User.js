@@ -62,7 +62,7 @@ const userSchema = new mongoose.Schema({
         type:String,
         enum:["Male","Female","Other"],
     },
-    dateOfBirth:{
+    dob:{
         type:Date,
         
     },

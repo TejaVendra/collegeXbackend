@@ -17,7 +17,7 @@ connectDB()
 
 app.use(
   cors({
-    origin: "https://cx-wh9z.onrender.com",
+    origin: "https://cx-wh9z.onrender.com",//here also
     credentials: true,
   })
 );

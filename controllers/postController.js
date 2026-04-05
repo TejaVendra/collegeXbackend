@@ -410,7 +410,12 @@ export const deletePost = async (req, res) => {
     // await Comment.deleteMany({ post: postId });
 
     // Delete the post
-    await Post.findByIdAndDelete(postId);
+    await Promise.all([
+      Post.findByIdAndDelete(postId),
+      Notification.deleteMany({ post: postId }),
+      // Comment.deleteMany({ post: postId }) // if needed
+    ]);
+
 
     return res.status(200).json({ 
       success: true, 

@@ -7,6 +7,8 @@ import cloudinary from "../libs/cloudinary.js";
 import Email from "../modals/EmailVerification.js";
 import { sendEmail } from "../libs/sendEmail.js";
 import Post from "../modals/Post.js";
+import Notification from "../modals/Notification.js";
+import { getReceiverSocketId, io } from "../libs/socket.js";
 
 export const Signup = async (req, res) => {
   try {
@@ -64,7 +66,7 @@ export const Signup = async (req, res) => {
     try {
       await sendEmail({
             to: email,
-            subject: "Welcome to X 🎉",
+            subject: "Welcome to CX(college-X)",
             html: `
               <div style="font-family: Helvetica, Arial, sans-serif; min-width: 1000px; overflow: auto; line-height: 2">
                 <div style="margin: 50px auto; width: 70%; padding: 20px 0">
@@ -87,7 +89,7 @@ export const Signup = async (req, res) => {
                   </p>
 
                   <a
-                    href="http://localhost:5173/login"
+                    href="https://cx-wh9z.onrender.com/login"
                     style="
                       display: inline-block;
                       margin: 20px 0;
@@ -308,7 +310,7 @@ export const forgotPassword = async (req,res) =>{
         
         await user.save();
 
-        const resetLink = `http://localhost:5173/reset-password/${resetToken}`
+        const resetLink = `https://cx-wh9z.onrender.com/reset-password/${resetToken}`
 
         await sendEmail({
             to: user.email,
@@ -432,6 +434,47 @@ export const updatePassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+export const changeUsername = async (req, res) => {
+  try {
+    const { username } = req.body;
+    const userId = req.user._id;
+
+    if (!username || !username.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Username is required",
+      });
+    }
+
+    // Check if username already exists
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Username already taken",
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username: username.trim() },
+      { new: true }
+    ).select("-password");
+
+    res.status(200).json({
+      success: true,
+      user: updatedUser,
+      message: "Username updated successfully",
+    });
+
+  } catch (error) {
+    console.log("Error in update username:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 
 
 // explore section , to see others profiles
@@ -545,6 +588,23 @@ export const followingUser = async (req,res) =>{
         $addToSet: { followers: currentUserId },
         $inc: { followerCount: 1 }, // Increment follower count
       });
+
+    if (!isFollowing) {
+        const newNotification = new Notification({
+          author: currentUserId,
+          recipient: id,
+          type: "follow",
+          message: `${currentUser.username} started following you`,
+        });
+
+        await newNotification.save();
+        await newNotification.populate('author',"fullName username profile");
+
+        const receieverSocketId = getReceiverSocketId(id);
+        if(receieverSocketId){
+          io.to(receieverSocketId).emit("newNotification",newNotification);
+        }
+      }
 
       return res.status(200).json({
         success: true,
@@ -739,6 +799,102 @@ export const getTopUsers = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal server error"
+    });
+  }
+};
+
+export const setGender = async (req, res) => {
+  try {
+    let { gender } = req.body;
+    const id = req.user._id;
+
+   
+    if (!gender || !gender.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Gender is required"
+      });
+    }
+
+    
+    gender = gender[0].toUpperCase() + gender.slice(1);
+
+   
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { gender },
+      { new: true }
+    );
+
+  
+    return res.status(200).json({
+      success: true,
+      message: "Gender updated successfully",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Error in setGender:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server issue"
+    });
+  }
+};
+
+export const setDOB = async (req, res) => {
+  try {
+    let { dob } = req.body;
+    const id = req.user._id;
+
+   
+    if (!dob) {
+      return res.status(400).json({
+        success: false,
+        message: "Date of birth is required"
+      });
+    }
+
+    
+    const parsedDOB = new Date(dob);
+
+   
+    if (isNaN(parsedDOB.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format"
+      });
+    }
+
+   
+    if (parsedDOB > new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "DOB cannot be in the future"
+      });
+    }
+
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { dob: parsedDOB },
+      { new: true }
+    );
+
+   
+    return res.status(200).json({
+      success: true,
+      message: "DOB updated successfully",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Error in setDOB:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server issue"
     });
   }
 };
